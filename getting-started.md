@@ -2,12 +2,12 @@
 
 ### Data Tables
 
-The core component of Lunata is the `<data-table>`. Basic usage using the example of a [Single File Component](https://vuejs.org/v2/guide/single-file-components.html) looks like this:
+The core component of Lunata is the `<lunata-table>`. Basic usage using the example of a [Single File Component](https://vuejs.org/v2/guide/single-file-components.html) looks like this:
 
-```markup
+```html
 <template>
     <h1>Users</h1>
-    <data-table :items="users" :columns="columns" />
+    <lunata-table :items="users" :columns="columns" />
 </template>
 
 <script>
@@ -49,11 +49,11 @@ export default {
 
 ### Explanation
 
-The `<data-table>` component uses two fundamental props: `items` and `columns`. The value of the `items` prop is an array of data which will determine the rows that are listed, and the value of the `columns` prop is an array of objects describing the columns of the table.
+The `<lunata-table>` component uses two fundamental props: `items` and `columns`. The value of the `items` prop is an array of data which will determine the rows that are listed, and the value of the `columns` prop is an array of objects describing the columns of the table.
 
 #### Items
 
-Items must be an array of objects. This data can really be organized in any way.
+Items must be an array of objects.
 
 #### Columns
 
@@ -63,7 +63,9 @@ Columns must be an array of objects, and each object uses the following api:
 [
     {
         name: 'Name'
-          // The heading of the column
+          /**
+           * The heading of the column
+           */
         prop: 'name'
           /**
            * The property of each item that 
@@ -109,9 +111,10 @@ Columns must be an array of objects, and each object uses the following api:
 
 ### Advanced Usage
 
-```markup
+```html
+<!-- App.vue -->
 <template>
-    <data-table :items="users" :columns="columns" />
+    <lunata-table :items="users" :columns="columns" />
 </template>
 
 <script>
@@ -151,9 +154,8 @@ export default {
 </script>
 ```
 
-{% code-tabs %}
-{% code-tabs-item title="UserActive.vue" %}
-```markup
+```html
+<!-- UserActive.vue -->
 <template>
 <input type="checkbox" :value="item.active" @input="this.$emit('input', $event.target.checked)" />
 </template>
@@ -164,6 +166,4 @@ export default {
 }
 </script>
 ```
-{% endcode-tabs-item %}
-{% endcode-tabs %}
 
