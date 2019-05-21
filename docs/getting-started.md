@@ -1,13 +1,15 @@
 # Getting Started
 
-### Data Tables
+## Data Tables
 
 The core component of Lunata is the `<lunata-table>`. Basic usage using the example of a [Single File Component](https://vuejs.org/v2/guide/single-file-components.html) looks like this:
 
 ```html
 <template>
+<div>
     <h1>Users</h1>
     <lunata-table :items="users" :columns="columns" />
+</div>
 </template>
 
 <script>
@@ -40,22 +42,57 @@ export default {
 </script>
 ```
 
-#### Result
+### Result {docsify-ignore}
 
-| Name | Age |
-| :--- | :--- |
-| Bob | 26 |
-| Sally | 29 |
+<vuep template="#example"></vuep>
 
-### Explanation
+<script v-pre type="text/x-template" id="example">
+<template>
+<div>
+    <h1>Users</h1>
+    <lunata-table :items="users" :columns="columns" />
+</div>
+</template>
+
+<script>
+export default {
+    data() {
+        return {
+            users: [
+                {
+                    name: 'Bob',
+                    age: 26,
+                },
+                {
+                    name: 'Sally',
+                    age: 29,
+                },
+            ],
+            columns: [
+                {
+                    name: 'Name',
+                    prop: 'name'
+                },
+                {
+                    name: 'Age',
+                    prop: 'age'
+                }
+            ],
+        }
+    }
+}
+</script>
+</script>
+
+## Explanation
 
 The `<lunata-table>` component uses two fundamental props: `items` and `columns`. The value of the `items` prop is an array of data which will determine the rows that are listed, and the value of the `columns` prop is an array of objects describing the columns of the table.
 
-#### Items
+### Items
 
 Items must be an array of objects.
 
-#### Columns
+### Columns
 
 Columns must be an array of objects, and each object uses the following api:
 
@@ -66,6 +103,7 @@ Columns must be an array of objects, and each object uses the following api:
           /**
            * The heading of the column
            */
+          
         prop: 'name'
           /**
            * The property of each item that 
@@ -80,6 +118,7 @@ Columns must be an array of objects, and each object uses the following api:
            * This is only necessary if you are
            * going to be using CRUD features.
            */
+
         component: Component
           /**
            * (Optional) The Vue component
@@ -89,6 +128,7 @@ Columns must be an array of objects, and each object uses the following api:
            * prop containing the current
            * item.
            */
+
         get(item) {...}
           /**
            * (Optional) Method to return the value
@@ -96,6 +136,7 @@ Columns must be an array of objects, and each object uses the following api:
            * If you define this, then you do not
            * need to provide the 'prop' property.
            */
+
         set(item, val) {...}
           /**
            * (Optional) Method to set the value. 
@@ -109,12 +150,17 @@ Columns must be an array of objects, and each object uses the following api:
 ]
 ```
 
-### Advanced Usage
+## Advanced Usage
 
 ```html
 <!-- App.vue -->
 <template>
+<div>
+    <div>
+        Bob active: {{ users[0].active ? 'Yes' : 'No' }}
+    </div>
     <lunata-table :items="users" :columns="columns" />
+</div>
 </template>
 
 <script>
@@ -157,7 +203,7 @@ export default {
 ```html
 <!-- UserActive.vue -->
 <template>
-<input type="checkbox" :value="item.active" @input="this.$emit('input', $event.target.checked)" />
+<input type="checkbox" :checked="item.active" @input="$emit('input', $event.target.checked)" />
 </template>
 
 <script>
@@ -167,3 +213,68 @@ export default {
 </script>
 ```
 
+### Result {docsify-ignore}
+
+<vuep template="#advanced-example"></vuep>
+
+<script v-pre type="text/x-template" id="advanced-example">
+<template>
+<div>
+    <div>
+        Bob active: {{ users[0].active ? 'Yes' : 'No' }}
+    </div>
+    <lunata-table :items="users" :columns="columns" />
+</div>
+</template>
+
+<script>
+
+let UserActive = {
+    props: ['item'],
+    template: `<input type="checkbox" :checked="item.active" @input="$emit('input', $event.target.checked)" />`
+}
+
+export default {
+    data() {
+        return {
+            users: [
+                {
+                    name: 'Bob',
+                    age: 26,
+                    active: true,
+                },
+            ],
+            columns: [
+                {
+                    name: 'Name',
+                    prop: 'name'
+                },
+                {
+                    name: 'Active',
+                    component: UserActive,
+                    set(item, val) {
+                        item.active = val
+                    }
+                },
+                {
+                    name: 'Old Enough to Drink',
+                    get(item) {
+                        return item.age >= 18 ? 'Yes' : 'No'
+                    }
+                },
+            ],
+        }
+    }
+}
+</script>
+</script>
+
+In this example, you could also omit the `set` method on the Active column and instead just set the checkbox to use `v-model` on the corresponding object property.
+
+>! **Note** Using v-model on a property of an object that's part of an array won't work if you fetch the array from an API, or if the property wasn't part of the object to begin with. See [Vue Reactivity: Change Detection Caveats](https://vuejs.org/v2/guide/reactivity.html#Change-Detection-Caveats).
+
+```html
+<input type="checkbox" v-model="item.active" />
+```
+
+# End
