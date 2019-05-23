@@ -1,18 +1,26 @@
-<template>
-<td>
-    <component v-if="column.component !== undefined" :is="column.component" :item="item" @input="column.set(item, $event)" />
-    <template v-else>
-        <template v-if="column.hasOwnProperty('get')">
-            {{ column.get(item) }}
-        </template>
-        <template v-else>
-            {{ item[column.prop] }}
-        </template>
-    </template>
-</td>
-</template>
 <script>
 export default {
     props: ['item', 'column'],
+    /* eslint-disable no-unused-vars */
+    render(h) {
+
+        var tag
+
+        if (this.column.component !== undefined) {
+            tag = <this.column.component item={this.item} onInput={e => this.column.set(this.item, e)}/>
+        } else {
+            if (this.column.hasOwnProperty('get')) {
+                tag = this.column.get(this.item)
+            } else {
+                tag = this.item[this.column.prop]
+            }
+        }
+
+        return (
+            <td>
+                {tag}
+            </td>
+        )
+    }
 }
 </script>

@@ -1,4 +1,4 @@
-import LunataTable from './LunataTable.vue'
+import LunataTable from './src/LunataTable.vue'
 
 const VueLunata = {
     install(Vue) {

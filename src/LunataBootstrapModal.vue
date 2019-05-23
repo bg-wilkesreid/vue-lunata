@@ -6,12 +6,7 @@
                     <h2 class="modal-title">{{ title }}</h2>
                 </div>
                 <div class="modal-body">
-                    <div v-for="column in columns" :key="column.name" class="form-group">
-                        <label :for="column.name">{{ column.name }}</label>
-                        <select v-if="column.type == 'select'" ref="input" class="form-control" @input="update($event, column)" />
-                        <textarea v-if="column.type == 'textarea'" ref="input" class="form-control" @input="update($event, column)" />
-                        <input v-else :type="column.type" ref="input" class="form-control" @input="update($event, column)">
-                    </div>
+                    <lunata-bootstrap-modal-field v-for="column in visibleColumns" ref="field" :key="column.name" :item="editingItem" :column="column" @update="update($event, column)" />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
@@ -23,6 +18,9 @@
 </template>
 <script>
 import $ from 'jquery'
+import 'bootstrap'
+
+import LunataBootstrapModalField from './LunataBootstrapModalField.vue'
 export default {
     props: {
         type: {
@@ -42,9 +40,12 @@ export default {
             required: false
         }
     },
+    components: {
+        LunataBootstrapModalField
+    },
     data() {
         return {
-            newItem: this.item ? Object.assign({}, this.item) : {}
+            editingItem: {}
         }
     },
     computed: {
@@ -64,37 +65,51 @@ export default {
                 default: return ''; 
             }
         },
+        visibleColumns() {
+            return this.columns.filter(column => {
+                return !column.computed
+            })
+        }
     },
     methods: {
-        resetNewItem() {
-            this.newItem = this.item ? Object.assign({}, this.item) : {}
+        resetEditingItem() {
+            this.editingItem = this.item ? Object.assign({}, this.item) : {}
         },
         resetInputs() {
-            this.$refs.input.forEach(input => {
-                input.value = ''
+            this.$refs.field.forEach(field => {
+                field.clear()
             })
         },
-        open() {
+        open(item) {
             $(this.$refs.modal).modal()
+            this.editingItem = Object.assign({}, item)
         },
         close() {
             $(this.$refs.modal).modal('hide')
         },
         confirm() {
             switch (this.type) {
-                case 'create': this.$emit('create', this.newItem); break;
-                case 'edit': this.$emit('update', this.newItem); break;
+                case 'create': this.$emit('create', this.editingItem); break;
+                case 'edit': this.$emit('update', this.editingItem); break;
                 case 'delete': this.$emit('delete', this.item); break;
             }
-            this.resetNewItem()
+            this.resetEditingItem()
             this.resetInputs()
             this.close()
         },
         update($event, column) {
             if ($event.target.type == 'checkbox') {
-                column.set(this.newItem, $event.target.checked)
+                if (column.hasOwnProperty('set')) {
+                    column.set(this.editingItem, $event.target.checked)
+                } else {
+                    this.editingItem[column.prop] = $event.target.checked;
+                }
             } else {
-                column.set(this.newItem, $event.target.value)
+                if (column.hasOwnProperty('set')) {
+                    column.set(this.editingItem, $event.target.value)
+                } else {
+                    this.editingItem[column.prop] = $event.target.value
+                }
             }
         }
     }

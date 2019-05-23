@@ -1,0 +1,6 @@
+* [Installation](installation.md#installation)
+* [Getting Started](getting-started.md#getting-started)
+    * [Data Tables](getting-started.md#data-tables)
+* [Columns](columns.md#columns)
+    * [Basics](columns.md#basics)
+    * [CRUD](columns.md#crud)
