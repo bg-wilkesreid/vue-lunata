@@ -1,22 +1,29 @@
 <script>
+import { ModelListSelect } from 'vue-search-select'
 export default {
-    props: ['column', 'item'],
+    props: ['cell', 'item', 'cells'],
+
+    components: {
+        ModelListSelect
+    },
 
     methods: {
-        getColumnValue() {
-            if (this.column.hasOwnProperty('get')) {
-                return this.column.get(this.item)
-            }
-
-            if (this.column.hasOwnProperty('prop')) {
-                return this.item[this.column.prop]
-            }
-
-            window.console.error(`"${this.column.name}" column doesn't have 'prop' or 'get' attributes.`)
-            return null
-        },
         clear() {
-            this.$refs.input.value = ''
+            if ('input' in this.$refs) {
+                this.$refs.input.value = ''
+            }
+        }
+    },
+
+    computed: {
+        column() {
+            return this.cell.column
+        },
+        value() {
+            return this.cell.value
+        },
+        display() {
+            return this.cell.display
         }
     },
 
@@ -24,8 +31,22 @@ export default {
     render(h) {
         let tag = null
         let update = e => {
-            this.$emit('update', e)
+            var val
+            if (this.column.type == 'checkbox') {
+                val = e.target.checked;
+            } else if (this.column.type == 'number' || this.column.type == 'float') {
+                val = parseFloat(e.target.value)
+            } else if (this.column.type == 'int') {
+                val = parseInt(e.target.value)
+            } else if (this.column.type == 'select') {
+                val = e
+            } else {
+                val = e.target.value
+            }
+            this.$emit('update', val)
         }
+
+        var columnType = this.column.hasOwnProperty('type') ? this.column.type : 'text'
 
         var choices
 
@@ -33,7 +54,11 @@ export default {
 
             choices = this.column.choices
 
-            if (Array.isArray(this.column.choices)) {
+            if (typeof choices == 'function') {
+                choices = choices()
+            }
+
+            if (Array.isArray(choices)) {
                 choices = choices.map(choice => {
                     return {
                         key: choice,
@@ -52,37 +77,35 @@ export default {
             choices = null
         }
 
-        switch (this.column.type) {
+        switch (columnType) {
             case 'select':
                 tag = (
-                    <select ref="input" class="form-control" value={this.getColumnValue()} onInput={update}>
-                        {choices.map(choice => {
-                            return (
-                                <option key={choice.value} value={choice.value}>{ choice.key }</option>
-                            )
-                        })}
-                    </select>
+                    <model-list-select ref="input" class="form-control" value={this.value} on-input={update} list={choices} option-value="value" option-text="key" />
                 )
             break;
             case 'textarea':
                 tag = (
-                    <textarea ref="input" class="form-control" value={this.getColumnValue()} onInput={update} />
+                    <textarea ref="input" class="form-control" value={this.value} onInput={update} />
                 )
             break;
             case 'checkbox':
                 tag = (
-                    <input type="checkbox" ref="input" class="form-control" checked={this.getColumnValue()} onInput={update} />
+                    <input type="checkbox" ref="input" class="form-control" checked={this.value} onInput={update} />
                 )
             break;
+            case 'float':
+            case 'int':
+                columnType = 'number';
+            /** eslint-disable no-fallthrough */
             default:
                 tag = (
-                    <input type={this.column.hasOwnProperty('type') ? this.column.type : 'text'} ref="input" class="form-control" value={this.getColumnValue()} onInput={update} />
+                    <input type={columnType} ref="input" class="form-control" value={this.value} onInput={update} />
                 )
             break;
         }
 
         if (this.column.readonly) {
-            tag = <div>{this.getColumnValue()}</div>
+            tag = <div domPropsInnerHTML={this.display} />
         }
 
         return (

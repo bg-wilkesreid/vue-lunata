@@ -12,12 +12,24 @@
     "build-lib": "vue-cli-service build --target lib --name vue-lunata ./index.js && cp dist/vue-lunata.umd.js docs/ && cp dist/vue-lunata.common.js docs/"
   },
   "dependencies": {
+    "bootstrap": "^4.3.1",
     "core-js": "^2.6.5",
+    "emmet": "^1.6.3",
+    "glamor": "^2.20.40",
+    "jquery": "^3.4.1",
+    "lodash": "^4.17.11",
     "node-sass": "^4.12.0",
+    "popper.js": "^1.15.0",
+    "v-tooltip": "^2.0.2",
     "vue": "^2.6.10",
-    "vue-context": "^4.0.0"
+    "vue-async-computed": "^3.6.1",
+    "vue-context": "^4.0.0",
+    "vue-promised": "^1.2.0",
+    "vue-search-select": "^2.8.3"
   },
   "devDependencies": {
+    "@vue/babel-helper-vue-jsx-merge-props": "^1.0.0",
+    "@vue/babel-preset-jsx": "^1.0.0",
     "@vue/cli-plugin-babel": "^3.7.0",
     "@vue/cli-plugin-eslint": "^3.7.0",
     "@vue/cli-service": "^3.7.0",

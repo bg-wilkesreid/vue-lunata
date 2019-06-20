@@ -8,7 +8,7 @@ The core component of Lunata is the `<lunata-table>`. Basic usage using the exam
 <template>
 <div>
     <h1>Users</h1>
-    <lunata-table :items="users" :columns="columns" />
+    <lunata-table :items="users" :columns="columns" pk="name" />
 </div>
 </template>
 
@@ -50,7 +50,7 @@ export default {
 <template>
 <div>
     <h1>Users</h1>
-    <lunata-table :items="users" :columns="columns" />
+    <lunata-table :items="users" :columns="columns" pk="id" />
 </div>
 </template>
 
@@ -60,6 +60,7 @@ export default {
         return {
             users: [
                 {
+                    id: 1,
                     name: 'Bob',
                     age: 26,
                 },
@@ -70,6 +71,7 @@ export default {
             ],
             columns: [
                 {
+                    id: 2,
                     name: 'Name',
                     prop: 'name'
                 },
@@ -86,7 +88,7 @@ export default {
 
 ## Explanation
 
-The `<lunata-table>` component uses two fundamental props: `items` and `columns`. The value of the `items` prop is an array of data which will determine the rows that are listed, and the value of the `columns` prop is an array of objects describing the columns of the table.
+The `<lunata-table>` component uses two fundamental props: `items` and `columns`. The value of the `items` prop is an array of data which will determine the rows that are listed, and the value of the `columns` prop is an array of objects describing the columns of the table. It is also recommended that you specify the primary key of your items by using the `pk` prop. See more about how Vue [maintains state](https://vuejs.org/v2/guide/list.html#Maintaining-State).
 
 ### Items
 
@@ -187,7 +189,7 @@ Items must be an array of objects.
     <div>
         Bob active: {{ users[0].active ? 'Yes' : 'No' }}
     </div>
-    <lunata-table :items="users" :columns="columns" />
+    <lunata-table :items="users" :columns="columns" pk="id" />
 </div>
 </template>
 
@@ -198,6 +200,7 @@ export default {
         return {
             users: [
                 {
+                    id: 1,
                     name: 'Bob',
                     age: 26,
                     active: true,
@@ -231,7 +234,7 @@ export default {
 ```html
 <!-- UserActive.vue -->
 <template>
-<input type="checkbox" :checked="item.active" @input="$emit('input', $event.target.checked)" />
+<input type="checkbox" :checked="item.active" pk="id" @input="$emit('input', $event.target.checked)" />
 </template>
 
 <script>
@@ -267,6 +270,7 @@ export default {
         return {
             users: [
                 {
+                    id: 1,
                     name: 'Bob',
                     age: 26,
                     active: true,

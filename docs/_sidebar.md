@@ -4,3 +4,6 @@
 * [Columns](columns.md#columns)
     * [Basics](columns.md#basics)
     * [CRUD](columns.md#crud)
+        * [Creating](columns.md#creating)
+        * [Updating](columns.md#updating)
+* [Aggregates](aggregates.md#aggregates)

@@ -1,5 +1,5 @@
 import Vue from 'vue'
-import VueLunata from './index'
+import VueLunata from '../index'
 import App from './App.vue'
 
 Vue.use(VueLunata)

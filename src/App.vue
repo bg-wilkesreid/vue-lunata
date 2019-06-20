@@ -27,6 +27,27 @@ export default {
                     age: 26,
                     active: true,
                 },
+                {
+                    name: 'Sally',
+                    age: 9,
+                },
+                {
+                    columns: [
+                        {
+                            width: 2,
+                            get: ""
+                        },
+                        {
+                            get(items) {
+                                let total = items.reduce((acc, item) => {
+                                    return item.age + acc
+                                }, 0)
+
+                                return 'Average: ' + total / items.length
+                            }
+                        }
+                    ]
+                }
             ],
             columns: [
                 {
@@ -37,9 +58,12 @@ export default {
                     name: 'Active',
                     component: UserActive,
                     set(item, val) {
-                        window.console.log(item, val)
                         item.active = val
                     }
+                },
+                {
+                    name: 'Age',
+                    prop: 'age'
                 },
                 {
                     name: 'Old Enough to Drink',

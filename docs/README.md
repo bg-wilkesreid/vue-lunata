@@ -11,7 +11,7 @@ Check out this documentation on the [GitHub Pages site](https://bg-wilkesreid.gi
 
 <script v-pre type="text/x-template" id="example">
 <template>
-    <lunata-table :items="users" :columns="columns" />
+    <lunata-table :items="users" :columns="columns" pk="id" />
 </template>
 
 <script>
@@ -21,10 +21,12 @@ Check out this documentation on the [GitHub Pages site](https://bg-wilkesreid.gi
             return {
                 users: [
                     {
+                        id: 1,
                         name: 'Bob',
                         age: 26
                     },
                     {
+                        id: 2,
                         name: 'Sally',
                         age: 29
                     }

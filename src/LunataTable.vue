@@ -1,31 +1,57 @@
 <template>
 <div class="lunata-table">
-    <table v-if="hasItems" table-layout="fixed">
-        <thead>
-            <th v-for="column in visibleColumns" :key="column.name">{{ column.name }}</th>
-        </thead>
-        <tbody>
-            <tr v-for="item in items" :key="item[pk]" @contextmenu.prevent="contextMenu($event, item)">
-                <lunata-cell v-for="column in visibleColumns" :key="column.name" :item="item" :column="column" />
-            </tr>
-        </tbody>
-    </table>
+    <div v-if="hasItems">
+        <table :border="hasBorder">
+            <thead>
+                <th>
+                    <input type="checkbox" v-model="tableSelectionStatus" />
+                </th>
+                <template v-for="column in visibleColumns">
+                    <th :key="column.name" v-show="!column.collapsed && groupBy != columnKey(column)" :data-column-name="column.name">{{ column.name }}</th>
+                </template>
+                <th v-if="crudEnabled" />
+            </thead>
+            <template v-if="groupingEnabled">
+                <lunata-row-group v-for="(rows, label) in groups" :key="label" :columns="visibleColumns" :pk="pk" :rows="rows" :label="label" :aggregateProps="groupAggregates" :crud-enabled="crudEnabled" :row-actions="rowActions" :group-by="groupBy" :selected="selected" ref="rowGroup" @select="onGroupSelect" @deselect="onGroupDeselect" @row-select="onRowSelect" />
+            </template>
+            <tbody v-else>
+                <lunata-row v-for="row in rows" :key="row.item[pk]" :row="row" :pk="pk" :columns="visibleColumns" :crud-enabled="crudEnabled" :row-actions="rowActions" :group-by="groupBy" :selected="selected" ref="row" @select="onRowSelect" />
+            </tbody>
+            <tbody>
+                <tr v-for="(method, name) in aggregates" :key="name" class="aggregate-row">
+                    <td :colspan="columns.length" class="aggregate-cell">{{ name }}: {{ method(items) }}</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
     <div v-else>
         <p class="no-items-message">No {{ labels.plural }} were found.</p>
     </div>
-    <lunata-bootstrap-modal ref="createModal" :columns="columns" :labels="labels" type="create" @create="emitCreate" />
-    <lunata-bootstrap-modal ref="editModal" :columns="columns" :labels="labels" type="edit" @update="emitUpdate" />
-    <vue-context ref="menu" v-slot="{ data }">
-        <ul v-if="data && data.hasOwnProperty('item')">
-            <li v-for="(action, name) in contextMenuActions(data.item)" :key="name" @click="action(data.item)">{{ name }}</li>
-        </ul>
-    </vue-context>
+    <template v-if="crudEnabled">
+        <lunata-bootstrap-modal ref="createModal" :columns="columns" :labels="labels" type="create" @create="emitCreate" />
+        <lunata-bootstrap-modal ref="editModal" :columns="columns" :labels="labels" type="edit" @update="emitUpdate" />
+        <lunata-bootstrap-confirm-delete-modal ref="deleteModal" @delete="emitDelete" />
+    </template>
 </div>
 </template>
+
 <script>
+import Vue from 'vue'
+import { Promised } from 'vue-promised'
 import LunataBootstrapModal from './LunataBootstrapModal.vue'
-import LunataCell from './LunataCell.vue'
-import { VueContext } from 'vue-context'
+import LunataBootstrapConfirmDeleteModal from './LunataBootstrapConfirmDeleteModal.vue'
+import { Row, columnKey } from './helpers'
+import LunataRow from './LunataRow.vue'
+import LunataRowGroup from './LunataRowGroup.vue'
+import toCamelCase from './toCamelCase'
+import _groupBy from 'lodash/groupBy'
+import _reject from 'lodash/reject'
+import _union from 'lodash/union'
+
+Vue.component('promised', Promised)
+
+window.Row = Row
+
 export default {
     name: 'lunata-table',
     props: {
@@ -62,16 +88,44 @@ export default {
                     plural: "items"
                 }
             }
+        },
+        'groupBy': {
+            type: String,
+            required: false
+        },
+        'groupAggregates': {
+            type: Array,
+            required: false,
+            default() {
+                return []
+            }
+        },
+        'aggregates': {
+            type: Object,
+            required: false,
+            default() {
+                return {}
+            }
+        },
+        'crudEnabled': Boolean,
+        'hasBorder': {
+            type: Boolean,
+            required: false,
+            default() {
+                return false
+            }
         }
     },
     components: {
-        VueContext,
-        LunataCell,
-        LunataBootstrapModal
+        LunataRow,
+        LunataRowGroup,
+        LunataBootstrapModal,
+        LunataBootstrapConfirmDeleteModal
     },
     data() {
         return {
-            // editingItem: null,
+            rows: [],
+            selected: []
         }
     },
     computed: {
@@ -82,64 +136,164 @@ export default {
             return this.columns.filter(column => {
                 return !column.hidden
             })
+        },
+        groups() {
+            if (!this.groupBy) {
+                return null
+            }
+
+            return _groupBy(this.rows, row => {
+                return row.cells[this.groupBy].value
+            })
+        },
+        groupingEnabled() {
+            return this.groupBy !== null && this.groupBy !== undefined
+        },
+        tableSelectionStatus: {
+            get() {
+                let pks = this.items.map(item => item[this.pk])
+                return pks.reduce((acc, pk) => {
+                    if (!acc) {
+                        return false
+                    } else {
+                        return this.selected.includes(pk)
+                    }
+                }, true)
+            },
+            set(val) {
+                if (val) {
+                    this.selected = this.items.map(item => item[this.pk])
+                } else {
+                    this.selected = []
+                }
+            }
+        }
+    },
+    mounted() {
+        this.$emit('mounted')
+        this.rows = this.items.map(item => {
+            let row = new Row(item, this.visibleColumns)
+            
+            return row
+        })
+    },
+    watch: {
+        visibleColumns(cols) {
+            this.rows = this.items.map(item => {
+                let row = new Row(item, cols)
+                
+                return row
+            })
+        },
+        items(items) {
+            this.rows = items.map(item => {
+                let row = new Row(item, this.visibleColumns)
+                
+                return row
+            })
+        },
+        selected(selected) {
+            this.$emit('select', selected)
         }
     },
     methods: {
-        contextMenuActions(item) {
+        columnKey,
+        rowActions(row) {
             let vm = this
+            let actions
             if (this.actions != null) {
                 if (typeof this.actions == 'function') {
-                    return this.actions(item)
+                    actions = this.actions(row)
                 } else {
-                    return this.actions
+                    actions = this.actions
                 }
             } else {
+                let appendActions
                 if (typeof this.appendActions == 'function') {
-                    return {
-                        Edit(item) {
-                            vm.edit(item)
-                            vm.$emit('context-edit', item)
-                        },
-                        Delete(item) {
-                            vm.$emit('context-delete', item)
-                        },
-                        ...vm.appendActions(item)
-                    }
+                    appendActions = vm.appendActions(row)
                 } else {
-                    return {
-                        Edit(item) {
-                            vm.edit(item)
-                            vm.$emit('context-edit', item)
-                        },
-                        Delete(item) {
-                            vm.$emit('context-delete', item)
-                        },
-                        ...vm.appendActions
-                    }
+                    appendActions = vm.appendActions
+                }
+
+                actions = {
+                    Edit(row) {
+                        vm.edit(row)
+                        vm.$emit('context-edit', row.item)
+                    },
+                    Delete(row) {
+                        vm.delete(row.item)
+                        vm.$emit('context-delete', row.item)
+                    },
+                    ...appendActions
                 }
             }
-        },
-        contextMenu($event, item) {
-            this.$refs.menu.open($event, { item })
+
+            return Object.keys(actions).map(key => {
+                let action = actions[key]
+                if (typeof action == 'function') {
+                    action = {
+                        name: key,
+                        do: action
+                    }
+                }
+                if (typeof action == 'object') {
+                    action = {
+                        name: key,
+                        ...action
+                    }
+                }
+                return action
+            })
         },
         create() {
             this.$refs.createModal.open()
         },
-        edit(item) {
-            this.$refs.editModal.open(item)
+        delete(item) {
+            this.$refs.deleteModal.open(item)
+        },
+        edit(row) {
+            this.$refs.editModal.open(row.item)
         },
         emitCreate(item) {
             this.$emit('create', item)
         },
         emitUpdate(item) {
+            // let row = this.rows.find(row => {
+            //     return row.item[this.pk] == item[this.pk]
+            // })
+            // row.item = item
+            // row.evaluateCells()
+            
             this.$emit('update', item)
-        }
-    }
+        },
+        emitDelete(item) {
+            this.$emit('delete', item)
+        },
+        toCamelCase(val) {
+            return toCamelCase(val)
+        },
+        onGroupSelect(rows) {
+            let rowPks = rows.map(row => row.item[this.pk])
+            this.selected = _union(this.selected, rowPks)
+        },
+        onGroupDeselect(rows) {
+            let rowPks = rows.map(row => row.item[this.pk])
+            this.selected = _reject(this.selected, i => rowPks.includes(i))
+        },
+        onRowSelect(row) {
+            if (!this.selected.includes(row.item[this.pk])) {
+                this.selected = [...this.selected, row.item[this.pk]]
+            } else {
+                this.selected = _reject(this.selected, i => i == row.item[this.pk])
+            }
+        },
+    },
 }
 </script>
 <style lang="scss" scoped>
 table {
     width: 100%;
+    border-color: #d4d4d4;
 }
 thead {
     background: #F5F6FA;
@@ -151,7 +305,7 @@ th {
     font-weight: bold;
     text-transform: uppercase;
 }
-th, td {
+th {
     padding: 10px 15px;
 }
 td {
@@ -166,22 +320,5 @@ tr + tr {
 }
 .no-items-message {
     font-size: 1rem;
-}
-
-.v-context {
-
-    ul { 
-        list-style: none;
-        padding-left: 0;
-
-        li {
-            padding: 7px 10px;
-            cursor: pointer;
-
-            &:hover {
-                background: #f0f0f0;
-            }
-        }
-    }
 }
 </style>
